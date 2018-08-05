@@ -91,18 +91,18 @@ class Map extends Component {
         const {rectSize, mapObj, created} = this.state;
         let rects = [];
         let mapHeight = Object.keys(mapObj).length - 1
-        let mapWidth = mapObj["0"] ? Object.keys(mapObj["0"]).length - 1 : 0
+        let mapWidth = mapObj[0] ? Object.keys(mapObj[0]).length - 1 : 0
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={i.toString() + j.toString()} width={rectSize} height={rectSize} x={i * rectSize} y={j * rectSize} fill="green" stroke="black"/>)
+            rects.push(<rect key={i.toString() + j.toString()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
             if(mapObj[i][j] !== "null") {
-            rects.push(<image xlinkHref={this.checkRect(mapObj[i][j])} x={i * rectSize} y={j * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${i * rectSize + (rectSize / 2)} ${j * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            rects.push(<image xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
             }
           }
         }
         return (
           <div onKeyPress={this.handleKeyUp}>
-          <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+50}px`, height: `${rectSize * mapHeight+50}px`}}>
+          <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
           </svg>
           <button type="button" onClick={this.create} value="barbarossa">Barbarossa</button>

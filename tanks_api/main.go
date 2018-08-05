@@ -28,10 +28,10 @@ type Message struct {
 type Map struct {
 	mapWidth  int
 	mapHeight int
-	schema    map[int]map[int]interface{}
+	schema    [][]interface{}
 }
 
-var hashmap Map = Map{mapWidth: 10, mapHeight: 10, schema: map[int]map[int]interface{}{}}
+var hashmap Map = Map{mapWidth: 5, mapHeight: 20, schema: [][]interface{}{}}
 
 type Rocket struct {
 	tank string
@@ -44,16 +44,14 @@ type Tank struct {
 	murders  int
 }
 
-func random(min, max int) int {
-	rand.Seed(time.Now().Unix())
-	return rand.Intn(max-min) + min
-}
-
-// func rocketFire(start [2]int, route string) {
-// 	var coords [2]int = start
+// func rocketFire(coords [2]int) {
+// 	tank := hashmap.schema[coords[0]][coords[1]]
+// 	route := tank.(map[string]interface{})["route"]
+// 	rocketCoords := coords
+// 	rocket := Rocket{tank: }
 // 	for {
 // 		if route == "up" {
-// 			if hashmap.schema[coords[0]-1][coords[1]] == "tank" {
+// 			if hashmap.schema[coords[0]][coords[1]] == "tank" {
 // 				hashmap.schema[coords[0]-1][coords[1]] = "null"
 // 			} else if hashmap.schema[coords[0]-1][coords[1]] == "wall" {
 // 				continue
@@ -104,8 +102,9 @@ func main() {
 
 	// Configure websocket route
 	http.HandleFunc("/ws", handleConnections)
+	hashmap.schema = make([][]interface{}, hashmap.mapHeight)
 	for i := 0; i < hashmap.mapHeight; i++ {
-		hashmap.schema[i] = make(map[int]interface{})
+		hashmap.schema[i] = make([]interface{}, hashmap.mapWidth)
 		for j := 0; j < hashmap.mapWidth; j++ {
 			hashmap.schema[i][j] = "null"
 		}
@@ -114,6 +113,7 @@ func main() {
 	hashmap.schema[1][2] = "wall"
 	hashmap.schema[1][3] = "wall"
 	hashmap.schema[2][1] = "wall"
+	log.Println(hashmap.schema)
 	// SetMaps()
 	// Start listening for incoming chat messages
 	go handleMessages()
@@ -246,21 +246,21 @@ func BarbarossaBot() {
 func StepUser(username, route string, coords [2]int) {
 	tank := hashmap.schema[coords[0]][coords[1]]
 	if tank.(map[string]interface{})["route"] == route {
-		if route == "up" && coords[1] > 0 && hashmap.schema[coords[0]][coords[1]-1] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] - 1}
-			hashmap.schema[coords[0]][coords[1]-1] = tank
+		if route == "up" && coords[0] > 0 && hashmap.schema[coords[0]-1][coords[1]] == "null" {
+			tank.(map[string]interface{})["coords"] = [2]int{coords[0] - 1, coords[1]}
+			hashmap.schema[coords[0]-1][coords[1]] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
-		} else if route == "down" && coords[1] < hashmap.mapHeight-1 && hashmap.schema[coords[0]][coords[1]+1] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] + 1}
-			hashmap.schema[coords[0]][coords[1]+1] = tank
-			hashmap.schema[coords[0]][coords[1]] = "null"
-		} else if route == "right" && coords[0] < hashmap.mapWidth-1 && hashmap.schema[coords[0]+1][coords[1]] == "null" {
+		} else if route == "down" && coords[0] < hashmap.mapHeight-1 && hashmap.schema[coords[0]+1][coords[1]] == "null" {
 			tank.(map[string]interface{})["coords"] = [2]int{coords[0] + 1, coords[1]}
 			hashmap.schema[coords[0]+1][coords[1]] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
-		} else if route == "left" && coords[0] > 0 && hashmap.schema[coords[0]-1][coords[1]] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0] - 1, coords[1]}
-			hashmap.schema[coords[0]-1][coords[1]] = tank
+		} else if route == "right" && coords[1] < hashmap.mapWidth-1 && hashmap.schema[coords[0]][coords[1]+1] == "null" {
+			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] + 1}
+			hashmap.schema[coords[0]][coords[1]+1] = tank
+			hashmap.schema[coords[0]][coords[1]] = "null"
+		} else if route == "left" && coords[1] > 0 && hashmap.schema[coords[0]][coords[1]-1] == "null" {
+			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] - 1}
+			hashmap.schema[coords[0]][coords[1]-1] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
 		} else {
 			return
@@ -281,7 +281,6 @@ func CreateTank(username string) {
 	tankMap["murders"] = tank.murders
 	tankMap["coords"] = coords
 	hashmap.schema[coords[0]][coords[1]] = tankMap
-	log.Println(coords)
 }
 
 func checkRect(rect interface{}) bool {
@@ -290,4 +289,9 @@ func checkRect(rect interface{}) bool {
 		return false
 	}
 	return true
+}
+
+func random(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
 }
