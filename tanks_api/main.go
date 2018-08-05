@@ -22,16 +22,22 @@ var upgrader = websocket.Upgrader{
 type Message struct {
 	Username string `json:"username"`
 	Message  string `json:"message"`
-	Coords   [2]int `json:"coords"`
+}
+
+type User struct {
+	coords  [2]int
+	murders int8
+	deaths  int8
 }
 
 type Map struct {
 	mapWidth  int
 	mapHeight int
 	schema    [][]interface{}
+	users     map[string]User
 }
 
-var hashmap Map = Map{mapWidth: 5, mapHeight: 20, schema: [][]interface{}{}}
+var hashmap Map = Map{mapWidth: 15, mapHeight: 15, schema: [][]interface{}{}, users: make(map[string]User)}
 
 type Rocket struct {
 	tank string
@@ -41,14 +47,13 @@ type Tank struct {
 	route    string
 	name     string
 	tankType string
-	murders  int
 }
 
-// func rocketFire(coords [2]int) {
+// func rocketFire(username string) {
+// 	coords := hashmap.users[username]
 // 	tank := hashmap.schema[coords[0]][coords[1]]
 // 	route := tank.(map[string]interface{})["route"]
-// 	rocketCoords := coords
-// 	rocket := Rocket{tank: }
+// 	rocket := Rocket{tank: username}
 // 	for {
 // 		if route == "up" {
 // 			if hashmap.schema[coords[0]][coords[1]] == "tank" {
@@ -167,14 +172,13 @@ func handleMessages() {
 		log.Printf("%v", msg)
 		username := msg.Username
 		command := msg.Message
-		coords := msg.Coords
 		if command == "barbarossa" {
 			go BarbarossaBot()
 			return
 		} else if command == "create" {
 			CreateTank(username)
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
-			StepUser(username, command, coords)
+			StepUser(username, command)
 		}
 		// Send it out to every client that is currently connected
 		for client := range clients {
@@ -191,7 +195,7 @@ func handleMessages() {
 func BarbarossaBot() {
 	var coords [2]int
 	coords = findNullRect(&hashmap)
-	tank := Tank{route: "up", name: "barbarossa", tankType: "bot", murders: 0}
+	tank := Tank{route: "up", name: "barbarossa", tankType: "bot"}
 	hashmap.schema[coords[0]][coords[1]] = tank
 
 	for {
@@ -243,25 +247,35 @@ func BarbarossaBot() {
 
 }
 
-func StepUser(username, route string, coords [2]int) {
+func StepUser(username, route string) {
+	user := hashmap.users[username]
+	coords := user.coords
 	tank := hashmap.schema[coords[0]][coords[1]]
 	if tank.(map[string]interface{})["route"] == route {
 		if route == "up" && coords[0] > 0 && hashmap.schema[coords[0]-1][coords[1]] == "null" {
 			tank.(map[string]interface{})["coords"] = [2]int{coords[0] - 1, coords[1]}
 			hashmap.schema[coords[0]-1][coords[1]] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
+			user.coords[0]--
+			hashmap.users[username] = user
 		} else if route == "down" && coords[0] < hashmap.mapHeight-1 && hashmap.schema[coords[0]+1][coords[1]] == "null" {
 			tank.(map[string]interface{})["coords"] = [2]int{coords[0] + 1, coords[1]}
 			hashmap.schema[coords[0]+1][coords[1]] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
+			user.coords[0]++
+			hashmap.users[username] = user
 		} else if route == "right" && coords[1] < hashmap.mapWidth-1 && hashmap.schema[coords[0]][coords[1]+1] == "null" {
 			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] + 1}
 			hashmap.schema[coords[0]][coords[1]+1] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
+			user.coords[1]++
+			hashmap.users[username] = user
 		} else if route == "left" && coords[1] > 0 && hashmap.schema[coords[0]][coords[1]-1] == "null" {
 			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] - 1}
 			hashmap.schema[coords[0]][coords[1]-1] = tank
 			hashmap.schema[coords[0]][coords[1]] = "null"
+			user.coords[1]--
+			hashmap.users[username] = user
 		} else {
 			return
 		}
@@ -273,14 +287,14 @@ func StepUser(username, route string, coords [2]int) {
 
 func CreateTank(username string) {
 	coords := findNullRect(&hashmap)
-	tank := Tank{route: "right", name: username, tankType: "user", murders: 0}
+	tank := Tank{route: "right", name: username, tankType: "user"}
 	tankMap := make(map[string]interface{})
 	tankMap["route"] = tank.route
 	tankMap["name"] = tank.name
 	tankMap["tankType"] = tank.tankType
-	tankMap["murders"] = tank.murders
 	tankMap["coords"] = coords
 	hashmap.schema[coords[0]][coords[1]] = tankMap
+	hashmap.users[tank.name] = User{coords: coords, murders: 0, deaths: 0}
 }
 
 func checkRect(rect interface{}) bool {

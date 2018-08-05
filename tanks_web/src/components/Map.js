@@ -12,7 +12,6 @@ class Map extends Component {
           rectSize: 50,
           users: [],
           mapObj: [],
-          userCoords: [],
           created: false
         }
         this.create = (e) => {
@@ -56,9 +55,6 @@ class Map extends Component {
           if (val.hasOwnProperty("tank")) {
             return rocket_icon;
           } else  if (val.hasOwnProperty("tankType")) {
-            if (this.props.username === val.name && this.state.userCoords !== val.coords){
-              this.setState({...this.state, userCoords: val.coords})
-            };
             return tank_icon;
           } else {
             return null
@@ -66,6 +62,11 @@ class Map extends Component {
         } else {
           return null
         }
+      }
+
+      generateRandomString() {
+        let str = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        return str;
       }
 
       checkRoute(val) {
@@ -85,7 +86,7 @@ class Map extends Component {
     }
     
       sendAction(action) {
-        this.connection.send(JSON.stringify({message: action, username: this.props.username, coords: this.state.userCoords}));
+        this.connection.send(JSON.stringify({message: action, username: this.props.username}));
       }
       render() {
         const {rectSize, mapObj, created} = this.state;
