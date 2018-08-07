@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -18,16 +19,18 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Define our message object
 type Message struct {
 	Username string `json:"username"`
 	Message  string `json:"message"`
 }
 
 type User struct {
+	name    string
 	coords  [2]int
 	murders int8
 	deaths  int8
+	conn    *websocket.Conn
+	mu      sync.Mutex
 }
 
 type Map struct {
@@ -37,7 +40,7 @@ type Map struct {
 	users     map[string]User
 }
 
-var hashmap Map = Map{mapWidth: 15, mapHeight: 15, schema: [][]interface{}{}, users: make(map[string]User)}
+var hashmap Map = Map{mapWidth: 20, mapHeight: 10, schema: [][]interface{}{}, users: make(map[string]User)}
 
 type Rocket struct {
 	tank string
@@ -48,57 +51,6 @@ type Tank struct {
 	name     string
 	tankType string
 }
-
-// func rocketFire(username string) {
-// 	coords := hashmap.users[username]
-// 	tank := hashmap.schema[coords[0]][coords[1]]
-// 	route := tank.(map[string]interface{})["route"]
-// 	rocket := Rocket{tank: username}
-// 	for {
-// 		if route == "up" {
-// 			if hashmap.schema[coords[0]][coords[1]] == "tank" {
-// 				hashmap.schema[coords[0]-1][coords[1]] = "null"
-// 			} else if hashmap.schema[coords[0]-1][coords[1]] == "wall" {
-// 				continue
-// 			} else {
-// 				hashmap.schema[coords[0]-1][coords[1]] = "rocket"
-// 			}
-// 			if hashmap.schema[coords[0]][coords[1]] == "rocket" {
-// 				hashmap.schema[coords[0]][coords[1]] = "null"
-// 			}
-// 			coords = [2]int{coords[0] - 1, coords[1]}
-// 		} else if route == "down" {
-// 			hashmap.schema[coords[0]+1][coords[1]] = "rocket"
-// 			if hashmap.schema[coords[0]][coords[1]] == "rocket" {
-// 				hashmap.schema[coords[0]][coords[1]] = "null"
-// 			}
-// 			coords = [2]int{coords[0] + 1, coords[1]}
-// 		} else if route == "right" {
-// 			hashmap.schema[coords[0]][coords[1]+1] = "rocket"
-// 			if hashmap.schema[coords[0]][coords[1]] == "rocket" {
-// 				hashmap.schema[coords[0]][coords[1]] = "null"
-// 			}
-// 			coords = [2]int{coords[0], coords[1] + 1}
-// 		} else if route == "left" {
-// 			hashmap.schema[coords[0]][coords[1]-1] = "rocket"
-// 			if hashmap.schema[coords[0]][coords[1]] == "null" {
-// 				hashmap.schema[coords[0]][coords[1]] = "null"
-// 			}
-// 			coords = [2]int{coords[0], coords[1] - 1}
-// 		} else {
-// 			return
-// 		}
-// 		for client := range clients {
-// 			err := client.WriteJSON(hashmap.schema)
-// 			if err != nil {
-// 				log.Printf("error: %v", err)
-// 				client.Close()
-// 				delete(clients, client)
-// 			}
-// 		}
-// 		time.Sleep(1 * time.Second)
-// 	}
-// }
 
 func main() {
 	// Create a simple file server
@@ -172,79 +124,19 @@ func handleMessages() {
 		log.Printf("%v", msg)
 		username := msg.Username
 		command := msg.Message
-		if command == "barbarossa" {
-			go BarbarossaBot()
-			return
-		} else if command == "create" {
+		if command == "create" {
 			CreateTank(username)
+			sendToClients()
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
 			StepUser(username, command)
-		}
-		// Send it out to every client that is currently connected
-		for client := range clients {
-			err := client.WriteJSON(hashmap.schema)
-			if err != nil {
-				log.Printf("error: %v", err)
-				client.Close()
-				delete(clients, client)
-			}
+			sendToClients()
+		} else if command == "delete" {
+			DeleteTank(username)
+			sendToClients()
+		} else if command == "fire" {
+			go rocketFire(username)
 		}
 	}
-}
-
-func BarbarossaBot() {
-	var coords [2]int
-	coords = findNullRect(&hashmap)
-	tank := Tank{route: "up", name: "barbarossa", tankType: "bot"}
-	hashmap.schema[coords[0]][coords[1]] = tank
-
-	for {
-		step := random(1, 5)
-		log.Print(step)
-		if step == 1 {
-			if coords[0]-1 >= 0 {
-				if checkRect(hashmap.schema[coords[0]-1][coords[1]]) {
-					hashmap.schema[coords[0]][coords[1]] = "null"
-					hashmap.schema[coords[0]-1][coords[1]] = tank
-					coords = [2]int{coords[0] - 1, coords[1]}
-				}
-			}
-		} else if step == 2 {
-			if coords[0]+1 <= hashmap.mapHeight {
-				if checkRect(hashmap.schema[coords[0]+1][coords[1]]) {
-					hashmap.schema[coords[0]][coords[1]] = "null"
-					hashmap.schema[coords[0]+1][coords[1]] = tank
-					coords = [2]int{coords[0] + 1, coords[1]}
-				}
-			}
-		} else if step == 3 {
-			if coords[1]-1 >= 0 {
-				if checkRect(hashmap.schema[coords[0]][coords[1]-1]) {
-					hashmap.schema[coords[0]][coords[1]] = "null"
-					hashmap.schema[coords[0]][coords[1]-1] = tank
-					coords = [2]int{coords[0], coords[1] - 1}
-				}
-			}
-		} else {
-			if coords[1]+1 <= hashmap.mapWidth {
-				if checkRect(hashmap.schema[coords[0]][coords[1]+1]) {
-					hashmap.schema[coords[0]][coords[1]] = "null"
-					hashmap.schema[coords[0]][coords[1]+1] = tank
-					coords = [2]int{coords[0], coords[1] + 1}
-				}
-			}
-		}
-		for client := range clients {
-			err := client.WriteJSON(hashmap.schema)
-			if err != nil {
-				log.Printf("error: %v", err)
-				client.Close()
-				delete(clients, client)
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
-
 }
 
 func StepUser(username, route string) {
@@ -297,6 +189,13 @@ func CreateTank(username string) {
 	hashmap.users[tank.name] = User{coords: coords, murders: 0, deaths: 0}
 }
 
+func DeleteTank(username string) {
+	var user User = hashmap.users[username]
+	coords := user.coords
+	hashmap.schema[coords[0]][coords[1]] = "null"
+	delete(hashmap.users, username)
+}
+
 func checkRect(rect interface{}) bool {
 	switch rect {
 	case "wall", "tank", "dummy":
@@ -308,4 +207,97 @@ func checkRect(rect interface{}) bool {
 func random(min, max int) int {
 	rand.Seed(time.Now().Unix())
 	return rand.Intn(max-min) + min
+}
+
+func sendToClients() {
+	// Send it out to every client that is currently connected
+	for client := range clients {
+		err := client.WriteJSON(hashmap.schema)
+		if err != nil {
+			log.Printf("error: %v", err)
+			client.Close()
+			delete(clients, client)
+		}
+	}
+}
+
+func rocketFire(username string) {
+	user := hashmap.users[username]
+	coords := user.coords
+	tank := hashmap.schema[coords[0]][coords[1]]
+	route := tank.(map[string]interface{})["route"]
+	rocket := Rocket{tank: username}
+	rocketMap := map[string]interface{}{"tank": rocket.tank}
+	var arrLevel, indexHeight, indexWidth, tmpVal int
+	var equalVal bool
+	hasRoute := false
+	for {
+		switch {
+		case route == "up":
+			arrLevel = 0
+			indexHeight = coords[0] - 1
+			indexWidth = coords[1]
+			equalVal = coords[0]-1 >= 0
+			hasRoute = true
+			tmpVal = -1
+		case route == "down":
+			arrLevel = 0
+			indexHeight = coords[0] + 1
+			indexWidth = coords[1]
+			equalVal = coords[0]+1 <= hashmap.mapHeight-1
+			hasRoute = true
+			tmpVal = 1
+		case route == "left":
+			arrLevel = 1
+			indexHeight = coords[0]
+			indexWidth = coords[1] - 1
+			equalVal = coords[1]-1 >= 0
+			hasRoute = true
+			tmpVal = -1
+		case route == "right":
+			arrLevel = 1
+			indexHeight = coords[0]
+			indexWidth = coords[1] + 1
+			equalVal = coords[1]+1 <= hashmap.mapWidth-1
+			hasRoute = true
+			tmpVal = 1
+		}
+		if hasRoute {
+			if equalVal {
+				nextRect := hashmap.schema[indexHeight][indexWidth]
+				if nextRect != "null" {
+					if nextRect == "wall" {
+						hashmap.schema[coords[0]][coords[1]] = "null"
+						sendToClients()
+						break
+					} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
+						victimName := hashmap.schema[indexHeight][indexWidth].(map[string]interface{})["name"]
+						hashmap.schema[indexHeight][indexWidth] = "null"
+						if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+							hashmap.schema[coords[0]][coords[1]] = "null"
+						}
+						victim := hashmap.users[victimName.(string)]
+						victim.deaths++
+						user.murders++
+						sendToClients()
+						break
+					}
+				} else {
+					if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+						hashmap.schema[coords[0]][coords[1]] = "null"
+					}
+					hashmap.schema[indexHeight][indexWidth] = rocketMap
+					coords[arrLevel] = coords[arrLevel] + tmpVal
+				}
+			} else {
+				if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+					hashmap.schema[coords[0]][coords[1]] = "null"
+					sendToClients()
+				}
+				break
+			}
+		}
+		sendToClients()
+		time.Sleep(30 * time.Millisecond)
+	}
 }

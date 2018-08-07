@@ -14,14 +14,15 @@ class Map extends Component {
           mapObj: [],
           created: false
         }
-        this.create = (e) => {
+        this.createOrDelete = (e) => {
           e.preventDefault();
-          this.setState({...this.state, created: true});
+          this.setState({...this.state, created: !this.state.created});
           this.connection.send(JSON.stringify({message: e.target.value, username: this.props.username}));
         }
         this.handleKeyUp = (e) => {
+          e.preventDefault();
           switch(e.code) {
-            case "Space":
+            case "KeyK":
               return this.sendAction("fire");
             case "KeyW":
               return this.sendAction("up");
@@ -43,8 +44,8 @@ class Map extends Component {
             console.log("Connected!");
           }
           this.connection.onmessage = e => {
-            let data = JSON.parse(e.data)
             console.log(e)
+            let data = JSON.parse(e.data)
             this.setState({mapObj: data})
           }
       }
@@ -65,7 +66,7 @@ class Map extends Component {
       }
 
       generateRandomString() {
-        let str = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        let str = [...Array(10)].map(i=>(~~(Math.random()*36)).toString(36)).join('');
         return str;
       }
 
@@ -86,7 +87,9 @@ class Map extends Component {
     }
     
       sendAction(action) {
+        if (this.state.created) {
         this.connection.send(JSON.stringify({message: action, username: this.props.username}));
+      }
       }
       render() {
         const {rectSize, mapObj, created} = this.state;
@@ -95,9 +98,9 @@ class Map extends Component {
         let mapWidth = mapObj[0] ? Object.keys(mapObj[0]).length - 1 : 0
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={i.toString() + j.toString()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
+            rects.push(<rect key={this.generateRandomString()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
             if(mapObj[i][j] !== "null") {
-            rects.push(<image xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            rects.push(<image key={this.generateRandomString()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
             }
           }
         }
@@ -106,8 +109,7 @@ class Map extends Component {
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
           </svg>
-          <button type="button" onClick={this.create} value="barbarossa">Barbarossa</button>
-          {!created && <button type="button" onClick={this.create} value="create">Зайти</button>}
+          <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти" : "Выйти"}</button>
           </div>
           
         );
