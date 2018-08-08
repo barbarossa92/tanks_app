@@ -12,11 +12,13 @@ class Map extends Component {
           rectSize: 50,
           users: [],
           mapObj: [],
-          created: false
+          created: window.localStorage.getItem("created") ? true : false,
+          username: null
         }
         this.createOrDelete = (e) => {
           e.preventDefault();
           this.setState({...this.state, created: !this.state.created});
+          window.localStorage.setItem("created", !this.state.created);
           this.connection.send(JSON.stringify({message: e.target.value, username: this.props.username}));
         }
         this.handleKeyUp = (e) => {
@@ -37,6 +39,7 @@ class Map extends Component {
           }
         }
       }
+
       componentDidMount() {
           window.addEventListener("keypress", this.handleKeyUp);
           this.connection = new WebSocket('ws://localhost:8000/ws');
@@ -63,11 +66,6 @@ class Map extends Component {
         } else {
           return null
         }
-      }
-
-      generateRandomString() {
-        let str = [...Array(10)].map(i=>(~~(Math.random()*36)).toString(36)).join('');
-        return str;
       }
 
       checkRoute(val) {
@@ -98,20 +96,21 @@ class Map extends Component {
         let mapWidth = mapObj[0] ? Object.keys(mapObj[0]).length - 1 : 0
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={this.generateRandomString()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
+            rects.push(<rect key={`${i}${j}`} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
             if(mapObj[i][j] !== "null") {
-            rects.push(<image key={this.generateRandomString()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            rects.push(<image key={`${i}-${j}`} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
             }
           }
         }
         return (
           <div onKeyPress={this.handleKeyUp}>
+          <div className="map" style={{float: "left"}}>
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
           </svg>
           <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти" : "Выйти"}</button>
           </div>
-          
+          </div>
         );
       }
 }

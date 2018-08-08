@@ -29,8 +29,6 @@ type User struct {
 	coords  [2]int
 	murders int8
 	deaths  int8
-	conn    *websocket.Conn
-	mu      sync.Mutex
 }
 
 type Map struct {
@@ -270,8 +268,10 @@ func rocketFire(username string, mutex *sync.Mutex) {
 				nextRect := hashmap.schema[indexHeight][indexWidth]
 				if nextRect != "null" {
 					if nextRect == "wall" {
-						hashmap.schema[coords[0]][coords[1]] = "null"
-						sendToClients(mutex)
+						if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+							hashmap.schema[coords[0]][coords[1]] = "null"
+							sendToClients(mutex)
+						}
 						break
 					} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
 						victimName := hashmap.schema[indexHeight][indexWidth].(map[string]interface{})["name"]
@@ -304,3 +304,11 @@ func rocketFire(username string, mutex *sync.Mutex) {
 		time.Sleep(30 * time.Millisecond)
 	}
 }
+
+// func BarbarossaBot() {
+// 	coords := findNullRect(&hashmap)
+// 	hashmap.users["BarbarossaBot"] = User{name: "BarbarossaBot", coords: coords, murders: 0, deaths: 0}
+// 	for {
+
+// 	}
+// }
