@@ -12,7 +12,7 @@ class Map extends Component {
           rectSize: 50,
           users: [],
           mapObj: [],
-          created: window.localStorage.getItem("created") ? true : false,
+          created: false,
           username: null
         }
         this.createOrDelete = (e) => {
@@ -38,6 +38,19 @@ class Map extends Component {
               return
           }
         }
+        this.logout = e => {
+          this.createOrDelete(e);
+          this.props.logout(e);
+        }
+      }
+
+      componentWillMount() {
+        let created = window.localStorage.getItem("created");
+        if(created === "true") this.setState({...this.state, created: true});
+      }
+
+      componentWillUnmount() {
+        this.connection.close();
       }
 
       componentDidMount() {
@@ -85,7 +98,7 @@ class Map extends Component {
     }
     
       sendAction(action) {
-        if (this.state.created) {
+        if (this.state.created && this.connection.readyState === this.connection.OPEN) {
         this.connection.send(JSON.stringify({message: action, username: this.props.username}));
       }
       }
@@ -108,7 +121,8 @@ class Map extends Component {
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
           </svg>
-          <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти" : "Выйти"}</button>
+          <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти на карту" : "Выйти с карты"}</button>
+          <button type="button" onClick={this.logout} value="delete">Выйти</button>
           </div>
           </div>
         );

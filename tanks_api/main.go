@@ -68,7 +68,9 @@ func main() {
 	hashmap.schema[1][2] = "wall"
 	hashmap.schema[1][3] = "wall"
 	hashmap.schema[2][1] = "wall"
-	log.Println(hashmap.schema)
+	hashmap.schema[7][2] = "wall"
+	hashmap.schema[7][3] = "wall"
+	hashmap.schema[7][4] = "wall"
 	var mutex sync.Mutex
 	// SetMaps()
 	// Start listening for incoming chat messages
@@ -125,13 +127,13 @@ func handleMessages(mutex *sync.Mutex) {
 		command := msg.Message
 		if command == "create" {
 			CreateTank(username)
-			sendToClients(mutex)
+			sendToClients(mutex, hashmap.schema)
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
 			StepUser(username, command)
-			sendToClients(mutex)
+			sendToClients(mutex, hashmap.schema)
 		} else if command == "delete" {
 			DeleteTank(username)
-			sendToClients(mutex)
+			sendToClients(mutex, hashmap.schema)
 		} else if command == "fire" {
 			go rocketFire(username, mutex)
 		}
@@ -185,7 +187,7 @@ func CreateTank(username string) {
 	tankMap["tankType"] = tank.tankType
 	tankMap["coords"] = coords
 	hashmap.schema[coords[0]][coords[1]] = tankMap
-	hashmap.users[tank.name] = User{coords: coords, murders: 0, deaths: 0}
+	hashmap.users[tank.name] = User{name: tank.name, coords: coords, murders: 0, deaths: 0}
 }
 
 func DeleteTank(username string) {
@@ -208,11 +210,11 @@ func random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func sendToClients(mutex *sync.Mutex) {
+func sendToClients(mutex *sync.Mutex, data interface{}) {
 	// Send it out to every client that is currently connected
 	mutex.Lock()
 	for client := range clients {
-		err := client.WriteJSON(hashmap.schema)
+		err := client.WriteJSON(data)
 		if err != nil {
 			log.Printf("error: %v", err)
 			client.Close()
@@ -270,7 +272,7 @@ func rocketFire(username string, mutex *sync.Mutex) {
 					if nextRect == "wall" {
 						if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 							hashmap.schema[coords[0]][coords[1]] = "null"
-							sendToClients(mutex)
+							sendToClients(mutex, hashmap.schema)
 						}
 						break
 					} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
@@ -282,7 +284,9 @@ func rocketFire(username string, mutex *sync.Mutex) {
 						victim := hashmap.users[victimName.(string)]
 						victim.deaths++
 						user.murders++
-						sendToClients(mutex)
+						hashmap.users[victimName.(string)] = victim
+						hashmap.users[username] = user
+						sendToClients(mutex, hashmap.schema)
 						break
 					}
 				} else {
@@ -295,12 +299,12 @@ func rocketFire(username string, mutex *sync.Mutex) {
 			} else {
 				if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 					hashmap.schema[coords[0]][coords[1]] = "null"
-					sendToClients(mutex)
+					sendToClients(mutex, hashmap.schema)
 				}
 				break
 			}
 		}
-		sendToClients(mutex)
+		sendToClients(mutex, hashmap.schema)
 		time.Sleep(30 * time.Millisecond)
 	}
 }

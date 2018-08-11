@@ -14,10 +14,15 @@ class App extends Component {
       window.localStorage.setItem("usrName", usrName);
       this.setState({username: usrName})
     }
+    this.logout = e => {
+      e.preventDefault();
+      window.localStorage.removeItem("usrName");
+      this.setState({username: null});
+    }
   }
 
   componentWillMount() {
-    let username = window.localStorage.getItem("usrName")
+    let username = window.localStorage.getItem("usrName");
     if (username) {
       this.setState({username: username});
     }
@@ -30,9 +35,9 @@ class App extends Component {
 
 
   render() {
-    const {username} = this.state;
+    let {username} = this.state;
     return (
-      username ? <Map username={this.state.username}/> : <Login setUsername={this.setUsername}/>
+      username ? <Map username={this.state.username} logout={this.logout}/> : <Login setUsername={this.setUsername}/>
     )
   }
 }
