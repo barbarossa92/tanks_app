@@ -12,6 +12,7 @@ class Map extends Component {
           rectSize: 50,
           users: [],
           mapObj: [],
+          logMessages: [],
           created: false,
           username: null
         }
@@ -64,7 +65,7 @@ class Map extends Component {
           this.connection.onmessage = e => {
             console.log(e)
             let data = JSON.parse(e.data)
-            this.setState({mapObj: data})
+            this.setState({mapObj: data.map, logMessages: data.log})
           }
       }
       checkRect(val) {
@@ -117,14 +118,18 @@ class Map extends Component {
             }
           }
         }
+        const log = this.state.logMessages ? this.state.logMessages.map((m) => <p>{m}</p>) : null;
         return (
           <div onKeyPress={this.handleKeyUp}>
-          <div className="map" style={{float: "left"}}>
+          <div className="map" style={{float: "left", width: "80%"}}>
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
           </svg>
           <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти на карту" : "Выйти с карты"}</button>
           <button type="button" onClick={this.logout} value="delete">Выйти</button>
+          </div>
+          <div className="log" style={{height: "350px", width: "20%", overflowY: "scroll"}}>
+            {log}
           </div>
           </div>
         );

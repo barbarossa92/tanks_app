@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 
 var clients = make(map[*websocket.Conn]bool) // connected clients
 var broadcast = make(chan Message)           // broadcast channel
+var data = make(map[string]interface{})
+
 // Configure the upgrader
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -36,6 +39,7 @@ type Map struct {
 	mapHeight int
 	schema    [][]interface{}
 	users     map[string]User
+	log       []string
 }
 
 var hashmap Map = Map{mapWidth: 20, mapHeight: 10, schema: [][]interface{}{}, users: make(map[string]User)}
@@ -48,6 +52,11 @@ type Tank struct {
 	route    string
 	name     string
 	tankType string
+}
+
+func (m *Map) writeToLog(message string) []string {
+	m.log = append(m.log, message)
+	return m.log
 }
 
 func main() {
@@ -71,6 +80,8 @@ func main() {
 	hashmap.schema[7][2] = "wall"
 	hashmap.schema[7][3] = "wall"
 	hashmap.schema[7][4] = "wall"
+	data["map"] = hashmap.schema
+	data["log"] = hashmap.log
 	var mutex sync.Mutex
 	// SetMaps()
 	// Start listening for incoming chat messages
@@ -93,7 +104,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 	// Register our new client
 	clients[ws] = true
-	ws.WriteJSON(hashmap.schema)
+	data["map"] = hashmap.schema
+	data["log"] = hashmap.log
+	ws.WriteJSON(data)
 	for {
 		var msg Message
 		// Read in a new message as JSON and map it to a Message object
@@ -127,13 +140,17 @@ func handleMessages(mutex *sync.Mutex) {
 		command := msg.Message
 		if command == "create" {
 			CreateTank(username)
-			sendToClients(mutex, hashmap.schema)
+			log := hashmap.writeToLog(strings.Split(username, "-")[0] + " вошел в игру.")
+			data["log"] = log
+			sendToClients(mutex, data)
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
 			StepUser(username, command)
-			sendToClients(mutex, hashmap.schema)
+			sendToClients(mutex, data)
 		} else if command == "delete" {
 			DeleteTank(username)
-			sendToClients(mutex, hashmap.schema)
+			log := hashmap.writeToLog(strings.Split(username, "-")[0] + " вышел из игры.")
+			data["log"] = log
+			sendToClients(mutex, data)
 		} else if command == "fire" {
 			go rocketFire(username, mutex)
 		}
@@ -275,7 +292,7 @@ func rocketFire(username string, mutex *sync.Mutex) {
 						if nextRect == "wall" {
 							if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 								hashmap.schema[coords[0]][coords[1]] = "null"
-								sendToClients(mutex, hashmap.schema)
+								sendToClients(mutex, data)
 							}
 							break
 						} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
@@ -289,7 +306,9 @@ func rocketFire(username string, mutex *sync.Mutex) {
 							user.murders++
 							hashmap.users[victimName.(string)] = victim
 							hashmap.users[username] = user
-							sendToClients(mutex, hashmap.schema)
+							log := hashmap.writeToLog(strings.Split(username, "-")[0] + " убил " + strings.Split(victimName.(string), "-")[0])
+							data["log"] = log
+							sendToClients(mutex, data)
 							break
 						}
 					} else {
@@ -302,12 +321,12 @@ func rocketFire(username string, mutex *sync.Mutex) {
 				} else {
 					if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 						hashmap.schema[coords[0]][coords[1]] = "null"
-						sendToClients(mutex, hashmap.schema)
+						sendToClients(mutex, data)
 					}
 					break
 				}
 			}
-			sendToClients(mutex, hashmap.schema)
+			sendToClients(mutex, data)
 			time.Sleep(30 * time.Millisecond)
 		}
 		return
