@@ -144,36 +144,38 @@ func StepUser(username, route string) {
 	user := hashmap.users[username]
 	coords := user.coords
 	tank := hashmap.schema[coords[0]][coords[1]]
-	if tank.(map[string]interface{})["route"] == route {
-		if route == "up" && coords[0] > 0 && hashmap.schema[coords[0]-1][coords[1]] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0] - 1, coords[1]}
-			hashmap.schema[coords[0]-1][coords[1]] = tank
-			hashmap.schema[coords[0]][coords[1]] = "null"
-			user.coords[0]--
-			hashmap.users[username] = user
-		} else if route == "down" && coords[0] < hashmap.mapHeight-1 && hashmap.schema[coords[0]+1][coords[1]] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0] + 1, coords[1]}
-			hashmap.schema[coords[0]+1][coords[1]] = tank
-			hashmap.schema[coords[0]][coords[1]] = "null"
-			user.coords[0]++
-			hashmap.users[username] = user
-		} else if route == "right" && coords[1] < hashmap.mapWidth-1 && hashmap.schema[coords[0]][coords[1]+1] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] + 1}
-			hashmap.schema[coords[0]][coords[1]+1] = tank
-			hashmap.schema[coords[0]][coords[1]] = "null"
-			user.coords[1]++
-			hashmap.users[username] = user
-		} else if route == "left" && coords[1] > 0 && hashmap.schema[coords[0]][coords[1]-1] == "null" {
-			tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] - 1}
-			hashmap.schema[coords[0]][coords[1]-1] = tank
-			hashmap.schema[coords[0]][coords[1]] = "null"
-			user.coords[1]--
-			hashmap.users[username] = user
+	if _, ok := tank.(map[string]interface{}); ok {
+		if tank.(map[string]interface{})["route"] == route {
+			if route == "up" && coords[0] > 0 && hashmap.schema[coords[0]-1][coords[1]] == "null" {
+				tank.(map[string]interface{})["coords"] = [2]int{coords[0] - 1, coords[1]}
+				hashmap.schema[coords[0]-1][coords[1]] = tank
+				hashmap.schema[coords[0]][coords[1]] = "null"
+				user.coords[0]--
+				hashmap.users[username] = user
+			} else if route == "down" && coords[0] < hashmap.mapHeight-1 && hashmap.schema[coords[0]+1][coords[1]] == "null" {
+				tank.(map[string]interface{})["coords"] = [2]int{coords[0] + 1, coords[1]}
+				hashmap.schema[coords[0]+1][coords[1]] = tank
+				hashmap.schema[coords[0]][coords[1]] = "null"
+				user.coords[0]++
+				hashmap.users[username] = user
+			} else if route == "right" && coords[1] < hashmap.mapWidth-1 && hashmap.schema[coords[0]][coords[1]+1] == "null" {
+				tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] + 1}
+				hashmap.schema[coords[0]][coords[1]+1] = tank
+				hashmap.schema[coords[0]][coords[1]] = "null"
+				user.coords[1]++
+				hashmap.users[username] = user
+			} else if route == "left" && coords[1] > 0 && hashmap.schema[coords[0]][coords[1]-1] == "null" {
+				tank.(map[string]interface{})["coords"] = [2]int{coords[0], coords[1] - 1}
+				hashmap.schema[coords[0]][coords[1]-1] = tank
+				hashmap.schema[coords[0]][coords[1]] = "null"
+				user.coords[1]--
+				hashmap.users[username] = user
+			} else {
+				return
+			}
 		} else {
-			return
+			hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["route"] = route
 		}
-	} else {
-		hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["route"] = route
 	}
 	return
 }
@@ -225,87 +227,93 @@ func sendToClients(mutex *sync.Mutex, data interface{}) {
 }
 
 func rocketFire(username string, mutex *sync.Mutex) {
-	user := hashmap.users[username]
-	coords := user.coords
-	tank := hashmap.schema[coords[0]][coords[1]]
-	route := tank.(map[string]interface{})["route"]
-	rocket := Rocket{tank: username}
-	rocketMap := map[string]interface{}{"tank": rocket.tank}
-	var arrLevel, indexHeight, indexWidth, tmpVal int
-	var equalVal bool
-	hasRoute := false
-	for {
-		switch {
-		case route == "up":
-			arrLevel = 0
-			indexHeight = coords[0] - 1
-			indexWidth = coords[1]
-			equalVal = coords[0]-1 >= 0
-			hasRoute = true
-			tmpVal = -1
-		case route == "down":
-			arrLevel = 0
-			indexHeight = coords[0] + 1
-			indexWidth = coords[1]
-			equalVal = coords[0]+1 <= hashmap.mapHeight-1
-			hasRoute = true
-			tmpVal = 1
-		case route == "left":
-			arrLevel = 1
-			indexHeight = coords[0]
-			indexWidth = coords[1] - 1
-			equalVal = coords[1]-1 >= 0
-			hasRoute = true
-			tmpVal = -1
-		case route == "right":
-			arrLevel = 1
-			indexHeight = coords[0]
-			indexWidth = coords[1] + 1
-			equalVal = coords[1]+1 <= hashmap.mapWidth-1
-			hasRoute = true
-			tmpVal = 1
-		}
-		if hasRoute {
-			if equalVal {
-				nextRect := hashmap.schema[indexHeight][indexWidth]
-				if nextRect != "null" {
-					if nextRect == "wall" {
-						if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
-							hashmap.schema[coords[0]][coords[1]] = "null"
+	user, ok := hashmap.users[username]
+	if ok {
+		coords := user.coords
+		tank := hashmap.schema[coords[0]][coords[1]]
+		rocket := Rocket{tank: username}
+		rocketMap := map[string]interface{}{"tank": rocket.tank}
+		var arrLevel, indexHeight, indexWidth, tmpVal int
+		var equalVal bool
+		hasRoute := false
+		route := tank.(map[string]interface{})["route"]
+		for {
+			switch {
+			case route == "up":
+				arrLevel = 0
+				indexHeight = coords[0] - 1
+				indexWidth = coords[1]
+				equalVal = coords[0]-1 >= 0
+				hasRoute = true
+				tmpVal = -1
+			case route == "down":
+				arrLevel = 0
+				indexHeight = coords[0] + 1
+				indexWidth = coords[1]
+				equalVal = coords[0]+1 <= hashmap.mapHeight-1
+				hasRoute = true
+				tmpVal = 1
+			case route == "left":
+				arrLevel = 1
+				indexHeight = coords[0]
+				indexWidth = coords[1] - 1
+				equalVal = coords[1]-1 >= 0
+				hasRoute = true
+				tmpVal = -1
+			case route == "right":
+				arrLevel = 1
+				indexHeight = coords[0]
+				indexWidth = coords[1] + 1
+				equalVal = coords[1]+1 <= hashmap.mapWidth-1
+				hasRoute = true
+				tmpVal = 1
+			}
+			if hasRoute {
+				if equalVal {
+					nextRect := hashmap.schema[indexHeight][indexWidth]
+					if nextRect != "null" {
+						if nextRect == "wall" {
+							if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+								hashmap.schema[coords[0]][coords[1]] = "null"
+								sendToClients(mutex, hashmap.schema)
+							}
+							break
+						} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
+							victimName := hashmap.schema[indexHeight][indexWidth].(map[string]interface{})["name"]
+							hashmap.schema[indexHeight][indexWidth] = "null"
+							if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+								hashmap.schema[coords[0]][coords[1]] = "null"
+							}
+							victim := hashmap.users[victimName.(string)]
+							victim.deaths++
+							user.murders++
+							hashmap.users[victimName.(string)] = victim
+							hashmap.users[username] = user
 							sendToClients(mutex, hashmap.schema)
+							break
 						}
-						break
-					} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
-						victimName := hashmap.schema[indexHeight][indexWidth].(map[string]interface{})["name"]
-						hashmap.schema[indexHeight][indexWidth] = "null"
+					} else {
 						if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 							hashmap.schema[coords[0]][coords[1]] = "null"
 						}
-						victim := hashmap.users[victimName.(string)]
-						victim.deaths++
-						user.murders++
-						hashmap.users[victimName.(string)] = victim
-						hashmap.users[username] = user
-						sendToClients(mutex, hashmap.schema)
-						break
+						hashmap.schema[indexHeight][indexWidth] = rocketMap
+						coords[arrLevel] = coords[arrLevel] + tmpVal
 					}
 				} else {
 					if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 						hashmap.schema[coords[0]][coords[1]] = "null"
+						sendToClients(mutex, hashmap.schema)
 					}
-					hashmap.schema[indexHeight][indexWidth] = rocketMap
-					coords[arrLevel] = coords[arrLevel] + tmpVal
+					break
 				}
-			} else {
-				if _, ok := hashmap.schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
-					hashmap.schema[coords[0]][coords[1]] = "null"
-					sendToClients(mutex, hashmap.schema)
-				}
-				break
 			}
+			sendToClients(mutex, hashmap.schema)
+			time.Sleep(30 * time.Millisecond)
 		}
-		sendToClients(mutex, hashmap.schema)
-		time.Sleep(30 * time.Millisecond)
+		return
+	} else {
+		log.Printf("User %v is not found!", username)
+		return
 	}
 }
 

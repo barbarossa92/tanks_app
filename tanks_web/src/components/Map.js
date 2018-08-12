@@ -39,7 +39,9 @@ class Map extends Component {
           }
         }
         this.logout = e => {
-          this.createOrDelete(e);
+          if (this.state.created) {
+            this.createOrDelete(e)
+          }
           this.props.logout(e);
         }
       }
