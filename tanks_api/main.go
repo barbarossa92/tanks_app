@@ -11,8 +11,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var clients = make(map[*websocket.Conn]bool) // connected clients
-var broadcast = make(chan Message)           // broadcast channel
+var clients = make(map[string]*websocket.Conn) // connected clients
+var broadcast = make(chan Message)             // broadcast channel
 var data = make(map[string]interface{})
 
 // Configure the upgrader
@@ -95,6 +95,8 @@ func main() {
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
+	// Get query username from url
+	username, ok := r.URL.Query()["username"]
 	// Upgrade initial GET request to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -103,7 +105,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Make sure we close the connection when the function returns
 	defer ws.Close()
 	// Register our new client
-	clients[ws] = true
+	if ok {
+		clients[username[0]] = ws
+	}
 	data["map"] = hashmap.schema
 	data["log"] = hashmap.log
 	ws.WriteJSON(data)
@@ -113,7 +117,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("error: %v", err)
-			delete(clients, ws)
+			delete(clients, username[0])
 			break
 		}
 		// Send the newly received message to the broadcast channel
@@ -233,10 +237,10 @@ func sendToClients(mutex *sync.Mutex, data interface{}) {
 	// Send it out to every client that is currently connected
 	mutex.Lock()
 	for client := range clients {
-		err := client.WriteJSON(data)
+		err := clients[client].WriteJSON(data)
 		if err != nil {
 			log.Printf("error: %v", err)
-			client.Close()
+			clients[client].Close()
 			delete(clients, client)
 		}
 	}
@@ -309,6 +313,7 @@ func rocketFire(username string, mutex *sync.Mutex) {
 							log := hashmap.writeToLog(strings.Split(username, "-")[0] + " убил " + strings.Split(victimName.(string), "-")[0])
 							data["log"] = log
 							sendToClients(mutex, data)
+							clients[victimName.(string)].WriteJSON(map[string]bool{"dead": true})
 							break
 						}
 					} else {

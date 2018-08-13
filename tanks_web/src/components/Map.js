@@ -58,14 +58,18 @@ class Map extends Component {
 
       componentDidMount() {
           window.addEventListener("keypress", this.handleKeyUp);
-          this.connection = new WebSocket('ws://localhost:8000/ws');
+          this.connection = new WebSocket(`ws://localhost:8000/ws?username=${this.props.username}`);
           this.connection.onopen = () => {
             console.log("Connected!");
           }
           this.connection.onmessage = e => {
-            console.log(e)
+            console.log(e);
             let data = JSON.parse(e.data)
-            this.setState({mapObj: data.map, logMessages: data.log})
+            if (data.hasOwnProperty("dead") && data.dead === true) {
+              this.setState({...this.state, created: false});
+            } else {
+            this.setState({mapObj: data.map, logMessages: data.log});
+            }
           }
       }
       checkRect(val) {
