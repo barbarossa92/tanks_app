@@ -66,7 +66,7 @@ class Map extends Component {
       }
 
       componentDidUpdate(prevProps, prevState) {
-        if (this.state.logMessages.length !== prevState.logMessages.length) {
+        if (this.state.logMessages != null && this.state.logMessages.length !== prevState.logMessages.length) {
           this.scrollToBottom();
         }
       }

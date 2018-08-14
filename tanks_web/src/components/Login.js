@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import "../styles.css"
 
 
 class Login extends Component {
@@ -17,13 +18,14 @@ class Login extends Component {
     }
     render() {
         return(
-            <div className="login">
-                <form className="login-form" onSubmit={this.submitForm}>
-                    <label>Введите свое имя</label>
-                    <input name="username" type="text" className="username" onChange={this.changeUsername}/>
-                    <button className="login-submit">Войти</button>
-                </form>
-            </div>
+        <div className="wrapper">
+            <form className="form-signin" onSubmit={this.submitForm}>       
+                <h2 className="form-signin-heading">Введите имя</h2>
+                <input type="text" className="form-control" name="username" placeholder="Имя" required autoFocus="" onChange={this.changeUsername}/> 
+                <br/>   
+                <button className="login-submit" type="submit">Войти</button>   
+            </form>
+        </div>
         )
     }
 }
