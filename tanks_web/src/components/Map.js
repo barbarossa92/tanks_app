@@ -52,6 +52,10 @@ class Map extends Component {
         }
       }
 
+      generateKey() {
+        return Math.round(Math.random() * 1000000)
+      }
+
       componentWillMount() {
         let created = window.localStorage.getItem("created");
         if(created === "true") this.setState({...this.state, created: true});
@@ -61,8 +65,18 @@ class Map extends Component {
         this.connection.close();
       }
 
+      componentDidUpdate() {
+        this.scrollToBottom();
+      }
+
+      scrollToBottom() {
+        this.scrollEl.scroll(0, this.scrollEl.scrollHeight);
+        console.log("Did it!")
+      }
+
       componentDidMount() {
           window.addEventListener("keypress", this.handleKeyUp);
+          this.scrollToBottom();
           this.connection = new WebSocket(`ws://localhost:8000/ws?username=${this.props.username}`);
           this.connection.onopen = () => {
             console.log("Connected!");
@@ -126,13 +140,13 @@ class Map extends Component {
         let mapWidth = mapObj[0] ? mapObj[0].length - 1 : 0
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={`${i}${j}`} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
+            rects.push(<rect key={this.generateKey()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
             if(mapObj[i][j] !== "null") {
-            rects.push(<image key={`${i}-${j}`} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            rects.push(<image key={this.generateKey()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
             }
           }
         }
-        const log = this.state.logMessages ? this.state.logMessages.map((m) => <p>{m}</p>) : null;
+        const log = this.state.logMessages ? this.state.logMessages.map((m) => <p key={this.generateKey()}>{m}</p>) : null;
         return (
           <div onKeyPress={this.handleKeyUp}>
           <div className="map" style={{float: "left", width: "80%"}}>
@@ -142,12 +156,12 @@ class Map extends Component {
           <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти на карту" : "Выйти с карты"}</button>
           <button type="button" onClick={this.logout} value="delete">Выйти</button>
           </div>
-          <div className="log" style={{height: "350px", width: "20%", overflowY: "scroll"}}>
+          <div className="log" id="log" style={{height: "350px", width: "20%", overflow: "auto"}} ref={el => this.scrollEl = el}>
             {log}
           </div>
           <div className="info">
-            <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> - {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
-            <p><span><img src={viewer_info} style={{height: "50px", width: "50px"}}/> - {this.state.viewersCount ? this.state.viewersCount : 0}</span></p>
+            <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
+            <p><span><img src={viewer_info} style={{height: "50px", width: "50px"}}/> {this.state.viewersCount ? this.state.viewersCount : 0}</span></p>
           </div>
           </div>
         );
