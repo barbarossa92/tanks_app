@@ -24,7 +24,10 @@ type Message struct {
 	Message  string `json:"message"`
 }
 
-var hashmap maps.Map = *maps.CreateMap(15, 10, [][2]int{{1, 2}, {1, 3}, {1, 4}})
+var hashmapWalls = [][2]int{{1, 2}, {1, 3}, {1, 4}, {2, 2}, {3, 2}, {4, 2}, {5, 2}, {6, 5}, {7, 5}, {8, 5}, {9, 5},
+	{0, 13}, {1, 13}, {2, 13}, {3, 13}, {4, 13}, {4, 14}, {4, 15}, {4, 16}, {7, 19}, {7, 18}, {7, 17}, {7, 16}, {7, 15},
+	{4, 9}, {5, 9}, {6, 9}, {7, 9}, {7, 10}, {8, 10}}
+var hashmap maps.Map = *maps.CreateMap(20, 10, hashmapWalls)
 
 func main() {
 	// Create a simple file server
