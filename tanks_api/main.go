@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/barbarossa92/tanks_app/tanks_api/maps"
 	"github.com/gorilla/websocket"
-	"github.com/tanks_app/tanks_api/maps"
 )
 
 var broadcast = make(chan Message) // broadcast channel
