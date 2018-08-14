@@ -13,6 +13,7 @@ class Map extends Component {
           users: [],
           mapObj: [],
           logMessages: [],
+          rating: {"1": "-----", "2": "-----", "3": "-------"},
           created: false,
           username: null
         }
@@ -23,9 +24,9 @@ class Map extends Component {
           this.connection.send(JSON.stringify({message: e.target.value, username: this.props.username}));
         }
         this.handleKeyUp = (e) => {
-          e.preventDefault();
           switch(e.code) {
             case "KeyK":
+              if (e.repeat) return;
               return this.sendAction("fire");
             case "KeyW":
               return this.sendAction("up");
@@ -68,7 +69,11 @@ class Map extends Component {
             if (data.hasOwnProperty("dead") && data.dead === true) {
               this.setState({...this.state, created: false});
             } else {
-            this.setState({mapObj: data.map, logMessages: data.log});
+              let state = {mapObj: data.map, logMessages: data.log}
+              if (data.hasOwnProperty("rating")) {
+                state = {...state, rating: data.rating}
+              }
+            this.setState(state);
             }
           }
       }
@@ -112,8 +117,8 @@ class Map extends Component {
       render() {
         const {rectSize, mapObj, created} = this.state;
         let rects = [];
-        let mapHeight = Object.keys(mapObj).length - 1
-        let mapWidth = mapObj[0] ? Object.keys(mapObj[0]).length - 1 : 0
+        let mapHeight = mapObj.length - 1
+        let mapWidth = mapObj[0] ? mapObj[0].length - 1 : 0
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
             rects.push(<rect key={`${i}${j}`} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)

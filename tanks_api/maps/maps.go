@@ -75,6 +75,21 @@ func (m *Map) RatingRefresh() map[int][2]interface{} {
 	return rating
 }
 
+func CreateMap(width, height int, walls [][2]int) *Map {
+	hashmap := Map{MapWidth: width, MapHeight: height, Schema: [][]interface{}{}, Users: make(map[string]User), Clients: make(map[string]*websocket.Conn)}
+	hashmap.Schema = make([][]interface{}, hashmap.MapHeight)
+	for i := 0; i < hashmap.MapHeight; i++ {
+		hashmap.Schema[i] = make([]interface{}, hashmap.MapWidth)
+		for j := 0; j < hashmap.MapWidth; j++ {
+			hashmap.Schema[i][j] = "null"
+		}
+	}
+	for _, wall := range walls {
+		hashmap.Schema[wall[0]][wall[1]] = "wall"
+	}
+	return &hashmap
+}
+
 func (m *Map) StepUser(username, route string) {
 	user := m.Users[username]
 	coords := user.Coords
@@ -158,6 +173,7 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 	if ok {
 		data := make(map[string]interface{})
 		data["map"] = m.Schema
+		data["log"] = m.Log
 		coords := user.Coords
 		tank := m.Schema[coords[0]][coords[1]]
 		rocket := Rocket{Tank: username}

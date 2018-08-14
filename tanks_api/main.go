@@ -24,7 +24,7 @@ type Message struct {
 	Message  string `json:"message"`
 }
 
-var hashmap = maps.Map{MapWidth: 20, MapHeight: 10, Schema: [][]interface{}{}, Users: make(map[string]maps.User), Clients: make(map[string]*websocket.Conn)}
+var hashmap maps.Map = *maps.CreateMap(15, 10, [][2]int{{1, 2}, {1, 3}, {1, 4}})
 
 func main() {
 	// Create a simple file server
@@ -33,22 +33,7 @@ func main() {
 
 	// Configure websocket route
 	http.HandleFunc("/ws", handleConnections)
-	hashmap.Schema = make([][]interface{}, hashmap.MapHeight)
-	for i := 0; i < hashmap.MapHeight; i++ {
-		hashmap.Schema[i] = make([]interface{}, hashmap.MapWidth)
-		for j := 0; j < hashmap.MapWidth; j++ {
-			hashmap.Schema[i][j] = "null"
-		}
-	}
-	hashmap.Schema[1][1] = "wall"
-	hashmap.Schema[1][2] = "wall"
-	hashmap.Schema[1][3] = "wall"
-	hashmap.Schema[2][1] = "wall"
-	hashmap.Schema[7][2] = "wall"
-	hashmap.Schema[7][3] = "wall"
-	hashmap.Schema[7][4] = "wall"
 	var mutex sync.Mutex
-	// SetMaps()
 	// Start listening for incoming chat messages
 	go handleMessages(&mutex)
 	// Start the server on localhost port 8000 and log any errors
@@ -100,6 +85,7 @@ func handleMessages(mutex *sync.Mutex) {
 		command := msg.Message
 		data := make(map[string]interface{})
 		data["map"] = hashmap.Schema
+		data["log"] = hashmap.Log
 		if command == "create" {
 			hashmap.CreateTank(username)
 			log := hashmap.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
