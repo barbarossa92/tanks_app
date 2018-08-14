@@ -53,7 +53,7 @@ class Map extends Component {
       }
 
       generateKey() {
-        return Math.round(Math.random() * 1000000)
+        return Math.round(Math.random() * 1000000000)
       }
 
       componentWillMount() {
@@ -65,13 +65,14 @@ class Map extends Component {
         this.connection.close();
       }
 
-      componentDidUpdate() {
-        this.scrollToBottom();
+      componentDidUpdate(prevProps, prevState) {
+        if (this.state.logMessages.length !== prevState.logMessages.length) {
+          this.scrollToBottom();
+        }
       }
 
       scrollToBottom() {
         this.scrollEl.scroll(0, this.scrollEl.scrollHeight);
-        console.log("Did it!")
       }
 
       componentDidMount() {
@@ -82,7 +83,6 @@ class Map extends Component {
             console.log("Connected!");
           }
           this.connection.onmessage = e => {
-            console.log(e);
             let data = JSON.parse(e.data)
             if (data.hasOwnProperty("dead") && data.dead === true) {
               this.setState({...this.state, created: false});
