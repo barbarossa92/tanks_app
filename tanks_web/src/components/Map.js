@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import wall_icon from "../brick-wall.png";
 import rocket_icon from "../fireworks.png";
 import tank_icon from "../tank.png";
+import tank_info from "../tank-info.png";
+import viewer_info from "../eye-icon.png";
 
 
 class Map extends Component {
@@ -15,7 +17,9 @@ class Map extends Component {
           logMessages: [],
           rating: {"1": "-----", "2": "-----", "3": "-------"},
           created: false,
-          username: null
+          username: null,
+          tanksCount: 0,
+          viewersCount: 0
         }
         this.createOrDelete = (e) => {
           e.preventDefault();
@@ -69,7 +73,8 @@ class Map extends Component {
             if (data.hasOwnProperty("dead") && data.dead === true) {
               this.setState({...this.state, created: false});
             } else {
-              let state = {mapObj: data.map, logMessages: data.log}
+              let state = {mapObj: data.map, logMessages: data.log, 
+                            viewersCount: data.viewers_count, tanksCount: data.tanks_count}
               if (data.hasOwnProperty("rating")) {
                 state = {...state, rating: data.rating}
               }
@@ -139,6 +144,10 @@ class Map extends Component {
           </div>
           <div className="log" style={{height: "350px", width: "20%", overflowY: "scroll"}}>
             {log}
+          </div>
+          <div className="info">
+            <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> - {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
+            <p><span><img src={viewer_info} style={{height: "50px", width: "50px"}}/> - {this.state.viewersCount ? this.state.viewersCount : 0}</span></p>
           </div>
           </div>
         );

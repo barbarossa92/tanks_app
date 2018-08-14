@@ -154,9 +154,15 @@ func random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func (m *Map) SendToClients(mutex *sync.Mutex, data map[string]interface{}) {
+func (m *Map) SendToClients(mutex *sync.Mutex) {
 	// Send it out to every client that is currently connected
 	mutex.Lock()
+	data := make(map[string]interface{})
+	data["map"] = m.Schema
+	data["log"] = m.Log
+	data["viewers_count"] = len(m.Clients)
+	data["tanks_count"] = len(m.Users)
+	data["rating"] = m.RatingRefresh()
 	for client := range m.Clients {
 		err := m.Clients[client].WriteJSON(data)
 		if err != nil {
@@ -171,9 +177,6 @@ func (m *Map) SendToClients(mutex *sync.Mutex, data map[string]interface{}) {
 func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 	user, ok := m.Users[username]
 	if ok {
-		data := make(map[string]interface{})
-		data["map"] = m.Schema
-		data["log"] = m.Log
 		coords := user.Coords
 		tank := m.Schema[coords[0]][coords[1]]
 		rocket := Rocket{Tank: username}
@@ -220,7 +223,7 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 						if nextRect == "wall" {
 							if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 								m.Schema[coords[0]][coords[1]] = "null"
-								m.SendToClients(mutex, data)
+								m.SendToClients(mutex)
 							}
 							break
 						} else if _, ok := nextRect.(map[string]interface{})["route"]; ok {
@@ -229,15 +232,11 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 							if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 								m.Schema[coords[0]][coords[1]] = "null"
 							}
-							victim := m.Users[victimName.(string)]
-							victim.Deaths++
 							user.Murders++
-							m.Users[victimName.(string)] = victim
+							delete(m.Users, victimName.(string))
 							m.Users[username] = user
-							logs := m.WriteToLog(strings.Split(username, "-")[0] + " убил " + strings.Split(victimName.(string), "-")[0])
-							data["log"] = logs
-							data["rating"] = m.RatingRefresh()
-							m.SendToClients(mutex, data)
+							m.WriteToLog(strings.Split(username, "-")[0] + " убил " + strings.Split(victimName.(string), "-")[0])
+							m.SendToClients(mutex)
 							if conn, ok := m.Clients[victimName.(string)]; ok {
 								conn.WriteJSON(map[string]bool{"dead": true})
 							}
@@ -253,12 +252,12 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 				} else {
 					if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 						m.Schema[coords[0]][coords[1]] = "null"
-						m.SendToClients(mutex, data)
+						m.SendToClients(mutex)
 					}
 					break
 				}
 			}
-			m.SendToClients(mutex, data)
+			m.SendToClients(mutex)
 			time.Sleep(30 * time.Millisecond)
 		}
 		return

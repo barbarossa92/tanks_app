@@ -61,6 +61,8 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["map"] = hashmap.Schema
 	data["log"] = hashmap.Log
+	data["viewers_count"] = len(hashmap.Clients)
+	data["tanks_count"] = len(hashmap.Users)
 	ws.WriteJSON(data)
 	for {
 		var msg Message
@@ -83,22 +85,17 @@ func handleMessages(mutex *sync.Mutex) {
 		log.Printf("%v", msg)
 		username := msg.Username
 		command := msg.Message
-		data := make(map[string]interface{})
-		data["map"] = hashmap.Schema
-		data["log"] = hashmap.Log
 		if command == "create" {
 			hashmap.CreateTank(username)
-			log := hashmap.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
-			data["log"] = log
-			hashmap.SendToClients(mutex, data)
+			hashmap.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
+			hashmap.SendToClients(mutex)
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
 			hashmap.StepUser(username, command)
-			hashmap.SendToClients(mutex, data)
+			hashmap.SendToClients(mutex)
 		} else if command == "delete" {
 			hashmap.DeleteTank(username)
-			log := hashmap.WriteToLog(strings.Split(username, "-")[0] + " вышел из игры.")
-			data["log"] = log
-			hashmap.SendToClients(mutex, data)
+			hashmap.WriteToLog(strings.Split(username, "-")[0] + " вышел из игры.")
+			hashmap.SendToClients(mutex)
 		} else if command == "fire" {
 			go hashmap.RocketFire(username, mutex)
 		}
