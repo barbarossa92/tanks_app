@@ -4,6 +4,8 @@ import rocket_icon from "../fireworks.png";
 import tank_icon from "../tank.png";
 import tank_info from "../tank-info.png";
 import viewer_info from "../eye-icon.png";
+import wsad_icon from "../wsad.png";
+import fire_icon from "../keyboard_k.png";
 
 
 const DOMAIN = process.env.NODE_ENV === "production" ? "ws://46.101.119.207:8000/ws" : "ws://localhost:8000/ws";
@@ -84,8 +86,6 @@ class Map extends Component {
       componentDidMount() {
           window.addEventListener("keypress", this.handleKeyUp);
           this.scrollToBottom();
-          console.log(process.env.NODE_ENV);
-          console.log(DOMAIN)
           this.connection = new WebSocket(`${DOMAIN}?username=${this.props.username}`);
           this.connection.onopen = () => {
             console.log("Connected!");
@@ -157,6 +157,7 @@ class Map extends Component {
         const log = this.state.logMessages ? this.state.logMessages.map((m) => <p key={this.generateKey()}>{m}</p>) : null;
         return (
           <div onKeyPress={this.handleKeyUp}>
+          <div>
           <div className="map" style={{float: "left", width: "80%"}}>
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
             {rects}
@@ -170,6 +171,14 @@ class Map extends Component {
           <div className="info">
             <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
             <p><span><img src={viewer_info} style={{height: "50px", width: "50px"}}/> {this.state.viewersCount ? this.state.viewersCount : 0}</span></p>
+          </div>
+          </div>
+          <div style={{textAlign: "center", marginTop: "50px"}}> 
+          <h3>Правила</h3>
+          <div className="rules" style={{display: "inline-flex"}}>
+            <p><span><img src={wsad_icon} style={{height: "100px", width: "100px"}}/></span>Вверх, вниз, вправо, влево</p>
+            <p><span><img src={fire_icon} style={{height: "100px", width: "100px"}}/></span>Огонь</p>
+          </div>
           </div>
           </div>
         );
