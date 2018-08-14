@@ -6,6 +6,10 @@ import tank_info from "../tank-info.png";
 import viewer_info from "../eye-icon.png";
 
 
+const DOMAIN = process.env.NODE_ENV === "production" ? "ws://46.101.119.207:8000/ws" : "ws://localhost:8000/ws";
+
+
+
 class Map extends Component {
     constructor(props) {
         super(props);
@@ -66,8 +70,10 @@ class Map extends Component {
       }
 
       componentDidUpdate(prevProps, prevState) {
-        if (this.state.logMessages != null && this.state.logMessages.length !== prevState.logMessages.length) {
+        if (this.state.logMessages && prevState.logMessages) {
+          if (this.state.logMessages.length !== prevState.logMessages.length) {
           this.scrollToBottom();
+          }
         }
       }
 
@@ -78,7 +84,9 @@ class Map extends Component {
       componentDidMount() {
           window.addEventListener("keypress", this.handleKeyUp);
           this.scrollToBottom();
-          this.connection = new WebSocket(`ws://localhost:8000/ws?username=${this.props.username}`);
+          console.log(process.env.NODE_ENV);
+          console.log(DOMAIN)
+          this.connection = new WebSocket(`${DOMAIN}?username=${this.props.username}`);
           this.connection.onopen = () => {
             console.log("Connected!");
           }
