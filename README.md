@@ -22,7 +22,7 @@ npm start
 
 - Rating of the best players
 - Multiple choice of maps 
-- Add some storage for Maps
+- Add some database for Maps
 
 
 Then point your browser to http://localhost:3000

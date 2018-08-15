@@ -186,7 +186,11 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 		var arrLevel, indexHeight, indexWidth, tmpVal int
 		var equalVal bool
 		hasRoute := false
-		route := tank.(map[string]interface{})["route"]
+		tankMap, ok := tank.(map[string]interface{})
+		if !ok {
+			return
+		}
+		route := tankMap["route"]
 		for {
 			switch {
 			case route == "up":
