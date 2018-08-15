@@ -241,6 +241,12 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 								conn.WriteJSON(map[string]bool{"dead": true})
 							}
 							break
+						} else if _, ok := nextRect.(map[string]interface{})["tank"]; ok {
+							if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
+								m.Schema[coords[0]][coords[1]] = "null"
+							}
+							break
+
 						}
 					} else {
 						if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
