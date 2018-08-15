@@ -217,6 +217,9 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 				tmpVal = 1
 			}
 			if hasRoute {
+				if m.Schema[coords[0]][coords[1]] == "null" {
+					break
+				}
 				if equalVal {
 					nextRect := m.Schema[indexHeight][indexWidth]
 					if nextRect != "null" {
@@ -242,6 +245,7 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 							}
 							break
 						} else if _, ok := nextRect.(map[string]interface{})["tank"]; ok {
+							m.Schema[indexHeight][indexWidth] = "null"
 							if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 								m.Schema[coords[0]][coords[1]] = "null"
 							}
