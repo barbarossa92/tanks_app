@@ -120,6 +120,27 @@ class Map extends Component {
         }
       }
 
+      buildSvgMap() {
+        const {rectSize, mapObj} = this.state;
+        let mapHeight = mapObj.length - 1
+        let mapWidth = mapObj[0] ? mapObj[0].length - 1 : 0
+        let rects = [];
+        for (var i = 0; i <= mapHeight; i++){
+          for (var j = 0; j <= mapWidth; j++) {
+            rects.push(<rect key={this.generateKey()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
+            if(mapObj[i][j] !== "null") {
+            rects.push(<image key={this.generateKey()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            }
+          }
+        }
+        return rects
+      }
+
+      writeLogMessages() {
+        let logs = this.state.logMessages ? this.state.logMessages.map((m) => <p key={this.generateKey()}>{m}</p>) : null;
+        return logs;
+      }
+
       checkRoute(val) {
         if (typeof(val) === "object" && val.hasOwnProperty("tankType")) {
             if (val.route === "right") {
@@ -143,30 +164,20 @@ class Map extends Component {
       }
       render() {
         const {rectSize, mapObj, created} = this.state;
-        let rects = [];
         let mapHeight = mapObj.length - 1
         let mapWidth = mapObj[0] ? mapObj[0].length - 1 : 0
-        for (var i = 0; i <= mapHeight; i++){
-          for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={this.generateKey()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
-            if(mapObj[i][j] !== "null") {
-            rects.push(<image key={this.generateKey()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
-            }
-          }
-        }
-        const log = this.state.logMessages ? this.state.logMessages.map((m) => <p key={this.generateKey()}>{m}</p>) : null;
         return (
           <div onKeyPress={this.handleKeyUp}>
           <div>
           <div className="map" style={{float: "left", width: "80%"}}>
           <svg style={{border:'2px solid green', width: `${rectSize * mapWidth+rectSize}px`, height: `${rectSize * mapHeight+rectSize}px`}}>
-            {rects}
+            {this.buildSvgMap()}
           </svg>
           <button type="button" onClick={this.createOrDelete} value={!created ? "create" : "delete"}>{!created ? "Зайти на карту" : "Выйти с карты"}</button>
           <button type="button" onClick={this.logout} value="delete">Выйти</button>
           </div>
           <div className="log" id="log" style={{height: "350px", width: "20%", overflow: "auto"}} ref={el => this.scrollEl = el}>
-            {log}
+            {this.writeLogMessages()}
           </div>
           <div className="info">
             <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
