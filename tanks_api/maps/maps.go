@@ -249,6 +249,7 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 							if _, ok := m.Schema[coords[0]][coords[1]].(map[string]interface{})["tank"]; ok {
 								m.Schema[coords[0]][coords[1]] = "null"
 							}
+							m.SendToClients(mutex)
 							break
 
 						}
