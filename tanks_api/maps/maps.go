@@ -37,7 +37,8 @@ type Tank struct {
 }
 
 func (m *Map) WriteToLog(message string) []string {
-	m.Log = append(m.Log, message)
+	datetime := time.Now().Format("2006/01/02/ 15:04:05")
+	m.Log = append(m.Log, datetime+" "+message)
 	return m.Log
 }
 
@@ -130,7 +131,7 @@ func (m *Map) StepUser(username, route string) {
 	return
 }
 
-func (m *Map) CreateTank(username string) {
+func (m *Map) CreateTank(username string) [2]int {
 	coords := m.FindNullRect()
 	tank := Tank{Route: "right", Name: username, TankType: "user"}
 	tankMap := make(map[string]interface{})
@@ -140,6 +141,7 @@ func (m *Map) CreateTank(username string) {
 	tankMap["coords"] = coords
 	m.Schema[coords[0]][coords[1]] = tankMap
 	m.Users[tank.Name] = User{Name: tank.Name, Coords: coords, Murders: 0, Deaths: 0}
+	return coords
 }
 
 func (m *Map) DeleteTank(username string) {

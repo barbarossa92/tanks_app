@@ -85,7 +85,7 @@ func handleMessages(mutex *sync.Mutex) {
 	for {
 		// Grab the next message from the broadcast channel
 		msg := <-broadcast
-		log.Printf("%v", msg)
+		// log.Printf("%v", msg)
 		username := msg.Username
 		command := msg.Message
 		if command == "create" {
