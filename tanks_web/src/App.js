@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Map from "./components/Map";
 import Login from "./components/Login";
+import "./styles.css";
 
 
 class App extends Component {

@@ -21,7 +21,7 @@ class Map extends Component {
           users: [],
           mapObj: [],
           logMessages: [],
-          rating: {"1": "-----", "2": "-----", "3": "-------"},
+          rating: [],
           created: false,
           username: null,
           tanksCount: 0,
@@ -90,8 +90,8 @@ class Map extends Component {
           this.connection.onopen = () => {
             console.log("Connected!");
           }
-          this.connection.onmessage = e => {
-            let data = JSON.parse(e.data)
+          this.connection.onmessage = e => {  
+            let data = JSON.parse(e.data);
             if (data.hasOwnProperty("dead") && data.dead === true) {
               this.setState({...this.state, created: false});
             } else {
@@ -127,9 +127,9 @@ class Map extends Component {
         let rects = [];
         for (var i = 0; i <= mapHeight; i++){
           for (var j = 0; j <= mapWidth; j++) {
-            rects.push(<rect key={this.generateKey()} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
+            rects.push(<rect key={`${i}-${j}`} width={rectSize} height={rectSize} x={j * rectSize} y={i * rectSize} fill="green" stroke="black"/>)
             if(mapObj[i][j] !== "null") {
-            rects.push(<image key={this.generateKey()} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
+            rects.push(<image key={`${i}+${j}`} xlinkHref={this.checkRect(mapObj[i][j])} x={j * rectSize} y={i * rectSize} width={rectSize}  transform={`rotate(${this.checkRoute(mapObj[i][j])} ${j * rectSize + (rectSize / 2)} ${i * rectSize + (rectSize / 2)})`} height={rectSize}/>)
             }
           }
         }
@@ -179,13 +179,13 @@ class Map extends Component {
           <div className="log" id="log" style={{height: "350px", width: "20%", overflow: "auto"}} ref={el => this.scrollEl = el}>
             {this.writeLogMessages()}
           </div>
-          <div className="info">
+          <div className="info" style={{float: "left"}}>
             <p><span><img src={tank_info} style={{height: "50px", width: "50px"}}/> {this.state.tanksCount ? this.state.tanksCount : 0}</span></p>
             <p><span><img src={viewer_info} style={{height: "50px", width: "50px"}}/> {this.state.viewersCount ? this.state.viewersCount : 0}</span></p>
           </div>
           </div>
           <div style={{textAlign: "center", marginTop: "50px"}}> 
-          <h3>Правила</h3>
+          <h3>Управление</h3>
           <div className="rules" style={{display: "inline-flex"}}>
             <p><span><img src={wsad_icon} style={{height: "100px", width: "100px"}}/></span>Вверх, вниз, вправо, влево</p>
             <p><span><img src={fire_icon} style={{height: "100px", width: "100px"}}/></span>Огонь</p>
