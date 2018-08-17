@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/barbarossa92/tanks_app/tanks_api/maps"
 	"github.com/gorilla/websocket"
@@ -61,12 +62,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		hashmap.Clients[username[0]] = ws
 	}
-	data := make(map[string]interface{})
-	data["map"] = hashmap.Schema
-	data["log"] = hashmap.Log
-	data["viewers_count"] = len(hashmap.Clients)
-	data["tanks_count"] = len(hashmap.Users)
+	data := hashmap.GetData()
 	ws.WriteJSON(data)
+	ws.SetReadDeadline(time.Now().Add(24 * time.Hour))
 	for {
 		var msg Message
 		// Read in a new message as JSON and map it to a Message object

@@ -52,26 +52,12 @@ func (m *Map) FindNullRect() [2]int {
 	return m.FindNullRect()
 }
 
-func (m *Map) RatingRefresh() map[int][2]interface{} {
-	rating := make(map[int][2]interface{}, 3)
-	i := 1
-	for {
-		if i > 3 {
-			break
-		} else {
-			tmpMax := 0
-			var tmpUser [2]interface{}
-			for u, k := range m.Users {
-				if k.Murders > tmpMax {
-					tmpMax = k.Murders
-					tmpUser[0] = u
-					tmpUser[1] = k.Murders
-				}
-			}
-			rating[i] = tmpUser
-			i++
-		}
-
+func (m *Map) RatingRefresh() map[string]map[string]int {
+	rating := make(map[string]map[string]int)
+	for u, k := range m.Users {
+		rating[u] = make(map[string]int, 2)
+		rating[u]["murders"] = k.Murders
+		rating[u]["deaths"] = k.Deaths
 	}
 	return rating
 }
@@ -159,12 +145,7 @@ func random(min, max int) int {
 func (m *Map) SendToClients(mutex *sync.Mutex) {
 	// Send it out to every client that is currently connected
 	mutex.Lock()
-	data := make(map[string]interface{})
-	data["map"] = m.Schema
-	data["log"] = m.Log
-	data["viewers_count"] = len(m.Clients)
-	data["tanks_count"] = len(m.Users)
-	data["rating"] = m.RatingRefresh()
+	data := m.GetData()
 	for client := range m.Clients {
 		err := m.Clients[client].WriteJSON(data)
 		if err != nil {
@@ -282,4 +263,16 @@ func (m *Map) RocketFire(username string, mutex *sync.Mutex) {
 		log.Printf("User %v is not found!", username)
 		return
 	}
+}
+
+func (m *Map) GetData() map[string]interface{} {
+	data := make(map[string]interface{})
+	data["map"] = m.Schema
+	data["map_width"] = m.MapWidth
+	data["map_height"] = m.MapHeight
+	data["log"] = m.Log
+	data["viewers_count"] = len(m.Clients)
+	data["tanks_count"] = len(m.Users)
+	data["rating"] = m.RatingRefresh()
+	return data
 }
