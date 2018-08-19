@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/barbarossa92/tanks_app/tanks_api/maps"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -29,20 +29,22 @@ var hashmapWalls = [][2]int{{1, 2}, {1, 3}, {1, 4}, {2, 2}, {3, 2}, {4, 2}, {5, 
 	{0, 13}, {1, 13}, {2, 13}, {3, 13}, {4, 13}, {4, 14}, {4, 15}, {4, 16}, {7, 19}, {7, 18}, {7, 17}, {7, 16}, {7, 15},
 	{4, 9}, {5, 9}, {6, 9}, {7, 9}, {7, 10}, {8, 10}}
 var hashmap maps.Map = *maps.CreateMap(20, 10, hashmapWalls)
+var mutex sync.Mutex
 
 func main() {
-	// Create a simple file server
-	fs := http.FileServer(http.Dir("../public"))
-	http.Handle("/", fs)
+
+	r := mux.NewRouter()
+	apiRouter := r.PathPrefix("/api").Subrouter()
+	apiRouter.HandleFunc("/get-users", GetMapUsers)
+	apiRouter.HandleFunc("/create-tank", CreateTank).Methods("POST")
 
 	// Configure websocket route
-	http.HandleFunc("/ws", handleConnections)
-	var mutex sync.Mutex
+	r.HandleFunc("/ws", handleConnections)
 	// Start listening for incoming chat messages
 	go handleMessages(&mutex)
 	// Start the server on localhost port 8000 and log any errors
 	log.Println("http server started on :8000")
-	err := http.ListenAndServe(":8000", nil)
+	err := http.ListenAndServe(":8000", r)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -87,16 +89,11 @@ func handleMessages(mutex *sync.Mutex) {
 		username := msg.Username
 		command := msg.Message
 		if command == "create" {
-			hashmap.CreateTank(username)
-			hashmap.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
-			hashmap.SendToClients(mutex)
+			hashmap.CreateTank(username, "user", mutex)
 		} else if command == "up" || command == "down" || command == "right" || command == "left" {
-			hashmap.StepUser(username, command)
-			hashmap.SendToClients(mutex)
+			hashmap.StepUser(username, command, mutex)
 		} else if command == "delete" {
-			hashmap.DeleteTank(username)
-			hashmap.WriteToLog(strings.Split(username, "-")[0] + " вышел из игры.")
-			hashmap.SendToClients(mutex)
+			hashmap.DeleteTank(username, mutex)
 		} else if command == "fire" {
 			go hashmap.RocketFire(username, mutex)
 		}

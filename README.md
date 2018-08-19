@@ -10,6 +10,7 @@ Backend
 ```
 cd ./tanks_api
 go get github.com/gorilla/websocket
+go get github.com/gorilla/mux
 go run main.go
 ```
 Frontend

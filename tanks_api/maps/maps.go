@@ -77,7 +77,7 @@ func CreateMap(width, height int, walls [][2]int) *Map {
 	return &hashmap
 }
 
-func (m *Map) StepUser(username, route string) {
+func (m *Map) StepUser(username, route string, mutex *sync.Mutex) {
 	user := m.Users[username]
 	coords := user.Coords
 	tank := m.Schema[coords[0]][coords[1]]
@@ -113,13 +113,14 @@ func (m *Map) StepUser(username, route string) {
 		} else {
 			m.Schema[coords[0]][coords[1]].(map[string]interface{})["route"] = route
 		}
+		m.SendToClients(mutex)
 	}
 	return
 }
 
-func (m *Map) CreateTank(username string) [2]int {
+func (m *Map) CreateTank(username, tankType string, mutex *sync.Mutex) map[string]interface{} {
 	coords := m.FindNullRect()
-	tank := Tank{Route: "right", Name: username, TankType: "user"}
+	tank := Tank{Route: "right", Name: username, TankType: tankType}
 	tankMap := make(map[string]interface{})
 	tankMap["route"] = tank.Route
 	tankMap["name"] = tank.Name
@@ -127,14 +128,18 @@ func (m *Map) CreateTank(username string) [2]int {
 	tankMap["coords"] = coords
 	m.Schema[coords[0]][coords[1]] = tankMap
 	m.Users[tank.Name] = User{Name: tank.Name, Coords: coords, Murders: 0, Deaths: 0}
-	return coords
+	m.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
+	m.SendToClients(mutex)
+	return tankMap
 }
 
-func (m *Map) DeleteTank(username string) {
+func (m *Map) DeleteTank(username string, mutex *sync.Mutex) {
 	var user User = m.Users[username]
 	coords := user.Coords
 	m.Schema[coords[0]][coords[1]] = "null"
 	delete(m.Users, username)
+	m.WriteToLog(strings.Split(username, "-")[0] + " вышел из игры.")
+	m.SendToClients(mutex)
 }
 
 func random(min, max int) int {
