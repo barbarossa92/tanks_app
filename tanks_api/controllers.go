@@ -99,3 +99,12 @@ func MoveTank(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(finalData)
 }
+
+func RocketFire(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("username")
+	go hashmap.RocketFire(username, &mutex)
+	data := map[string]string{"message": "Fire"}
+	finalData, _ := json.Marshal(data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(finalData)
+}

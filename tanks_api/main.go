@@ -39,6 +39,7 @@ func main() {
 	apiRouter.HandleFunc("/create-tank", UsernameRequiredDecorator(CreateTank)).Methods("POST")
 	apiRouter.HandleFunc("/delete-tank", UsernameRequiredDecorator(DeleteTank)).Methods("POST")
 	apiRouter.HandleFunc("/move-tank", UsernameRequiredDecorator(MoveTank)).Methods("POST")
+	apiRouter.HandleFunc("/fire", UsernameRequiredDecorator(RocketFire)).Methods("POST")
 	// Configure websocket route
 	r.HandleFunc("/ws", handleConnections)
 	// Start listening for incoming chat messages
