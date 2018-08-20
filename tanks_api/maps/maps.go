@@ -133,13 +133,17 @@ func (m *Map) CreateTank(username, tankType string, mutex *sync.Mutex) map[strin
 	return tankMap
 }
 
-func (m *Map) DeleteTank(username string, mutex *sync.Mutex) {
-	var user User = m.Users[username]
+func (m *Map) DeleteTank(username string, mutex *sync.Mutex) (bool, string) {
+	user, ok := m.Users[username]
+	if !ok {
+		return false, username + " is not found."
+	}
 	coords := user.Coords
 	m.Schema[coords[0]][coords[1]] = "null"
 	delete(m.Users, username)
 	m.WriteToLog(strings.Split(username, "-")[0] + " вышел из игры.")
 	m.SendToClients(mutex)
+	return true, ""
 }
 
 func random(min, max int) int {

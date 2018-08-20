@@ -35,9 +35,9 @@ func main() {
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api").Subrouter()
-	apiRouter.HandleFunc("/get-users", GetMapUsers)
-	apiRouter.HandleFunc("/create-tank", CreateTank).Methods("POST")
-
+	apiRouter.HandleFunc("/get-users", GetMapUsers).Methods("GET")
+	apiRouter.HandleFunc("/create-tank", UsernameRequiredDecorator(CreateTank)).Methods("POST")
+	apiRouter.HandleFunc("/delete-tank", UsernameRequiredDecorator(DeleteTank)).Methods("POST")
 	// Configure websocket route
 	r.HandleFunc("/ws", handleConnections)
 	// Start listening for incoming chat messages
