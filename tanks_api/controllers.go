@@ -73,3 +73,29 @@ func DeleteTank(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(messageData)
 }
+
+func MoveTank(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("username")
+	route := r.FormValue("route")
+	data := make(map[string]interface{})
+	if route == "" {
+		data["message"] = "'route' field is required!"
+		errData, _ := json.Marshal(data)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errData)
+		return
+	}
+	status, err := hashmap.StepUser(username, route, &mutex)
+	if !status {
+		data["message"] = err
+		errData, _ := json.Marshal(data)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errData)
+		return
+	}
+	data["message"] = "Tank is successfully move " + route
+	data["currentCoords"] = hashmap.Users[username].Coords
+	finalData, _ := json.Marshal(data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(finalData)
+}

@@ -77,8 +77,11 @@ func CreateMap(width, height int, walls [][2]int) *Map {
 	return &hashmap
 }
 
-func (m *Map) StepUser(username, route string, mutex *sync.Mutex) {
-	user := m.Users[username]
+func (m *Map) StepUser(username, route string, mutex *sync.Mutex) (bool, string) {
+	user, ok := m.Users[username]
+	if !ok {
+		return false, username + " is not found."
+	}
 	coords := user.Coords
 	tank := m.Schema[coords[0]][coords[1]]
 	if _, ok := tank.(map[string]interface{}); ok {
@@ -108,14 +111,19 @@ func (m *Map) StepUser(username, route string, mutex *sync.Mutex) {
 				user.Coords[1]--
 				m.Users[username] = user
 			} else {
-				return
+				return false, "No road to " + route
 			}
 		} else {
-			m.Schema[coords[0]][coords[1]].(map[string]interface{})["route"] = route
+			if route == "up" || route == "down" || route == "left" || route == "right" {
+				m.Schema[coords[0]][coords[1]].(map[string]interface{})["route"] = route
+			} else {
+				return false, "Route must be up, left, right or down, not be " + route
+			}
 		}
 		m.SendToClients(mutex)
+		return true, ""
 	}
-	return
+	return false, "Tank is not found"
 }
 
 func (m *Map) CreateTank(username, tankType string, mutex *sync.Mutex) map[string]interface{} {
