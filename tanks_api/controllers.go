@@ -5,6 +5,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -31,15 +34,6 @@ func UsernameRequiredDecorator(f func(w http.ResponseWriter, r *http.Request)) f
 			f(w, r)
 		}
 	}
-}
-
-func GetMapUsers(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	users, err := json.Marshal(hashmap.Users)
-	if err != nil {
-		log.Printf("[API] message: %v", err)
-	}
-	w.Write(users)
 }
 
 func CreateTank(w http.ResponseWriter, r *http.Request) {
@@ -107,4 +101,53 @@ func RocketFire(w http.ResponseWriter, r *http.Request) {
 	finalData, _ := json.Marshal(data)
 	w.WriteHeader(http.StatusOK)
 	w.Write(finalData)
+}
+
+func GetMapInfo(w http.ResponseWriter, r *http.Request) {
+	data := make(map[string]interface{})
+	data["map_height"] = hashmap.MapHeight
+	data["map_width"] = hashmap.MapWidth
+	data["tanks"] = len(hashmap.Users)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
+}
+
+func GetWallsCoords(w http.ResponseWriter, r *http.Request) {
+	walls := map[string][][2]int{"walls": hashmapWalls}
+	wallsData, _ := json.Marshal(walls)
+	w.WriteHeader(http.StatusOK)
+	w.Write(wallsData)
+}
+
+func GetEnemies(w http.ResponseWriter, r *http.Request) {
+	queries := mux.Vars(r)
+	username, ok := queries["username"]
+	if !ok {
+		err := map[string]string{"message": "'username' query is required!"}
+		errData, _ := json.Marshal(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errData)
+		return
+	}
+	var enemies []map[string]interface{}
+	for _, v := range hashmap.Users {
+		if v.Name != username {
+			enemyMap := make(map[string]interface{})
+			clearUsername := strings.Split(v.Name, "-")[0]
+			e, _ := json.Marshal(&v)
+			err := json.Unmarshal(e, &enemyMap)
+			if err != nil {
+				log.Printf("[API] message: %v", err)
+			}
+			enemyMap["name"] = clearUsername
+			enemies = append(enemies, enemyMap)
+		}
+	}
+	enemiesData, _ := json.Marshal(enemies)
+	w.WriteHeader(http.StatusOK)
+	w.Write(enemiesData)
 }

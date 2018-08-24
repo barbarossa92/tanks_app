@@ -35,7 +35,9 @@ func main() {
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api").Subrouter()
-	apiRouter.HandleFunc("/get-users", GetMapUsers).Methods("GET")
+	apiRouter.HandleFunc("/map-info", GetMapInfo).Methods("GET")
+	apiRouter.HandleFunc("/get-walls", GetWallsCoords).Methods("GET")
+	apiRouter.HandleFunc("/get-enemies/{username}", GetEnemies).Methods("GET")
 	apiRouter.HandleFunc("/create-tank", UsernameRequiredDecorator(CreateTank)).Methods("POST")
 	apiRouter.HandleFunc("/delete-tank", UsernameRequiredDecorator(DeleteTank)).Methods("POST")
 	apiRouter.HandleFunc("/move-tank", UsernameRequiredDecorator(MoveTank)).Methods("POST")

@@ -1,6 +1,7 @@
 package maps
 
 import (
+	"encoding/json"
 	"log"
 	"math/rand"
 	"strings"
@@ -11,10 +12,9 @@ import (
 )
 
 type User struct {
-	Name    string
-	Coords  [2]int
-	Murders int
-	Deaths  int
+	Name    string `json:"name"`
+	Coords  [2]int `json:"coords"`
+	Murders int    `json:"murders"`
 }
 
 type Map struct {
@@ -31,9 +31,9 @@ type Rocket struct {
 }
 
 type Tank struct {
-	Route    string
-	Name     string
-	TankType string
+	Route    string `json:"route"`
+	Name     string `json:"name"`
+	TankType string `json:"tankType"`
 }
 
 func (m *Map) WriteToLog(message string) []string {
@@ -57,7 +57,6 @@ func (m *Map) RatingRefresh() map[string]map[string]int {
 	for u, k := range m.Users {
 		rating[u] = make(map[string]int, 2)
 		rating[u]["murders"] = k.Murders
-		rating[u]["deaths"] = k.Deaths
 	}
 	return rating
 }
@@ -128,15 +127,18 @@ func (m *Map) StepUser(username, route string, mutex *sync.Mutex) (bool, string)
 
 func (m *Map) CreateTank(username, tankType string, mutex *sync.Mutex) map[string]interface{} {
 	coords := m.FindNullRect()
+	clearName := strings.Split(username, "-")[0]
 	tank := Tank{Route: "right", Name: username, TankType: tankType}
 	tankMap := make(map[string]interface{})
-	tankMap["route"] = tank.Route
-	tankMap["name"] = tank.Name
-	tankMap["tankType"] = tank.TankType
+	t, _ := json.Marshal(&tank)
+	err := json.Unmarshal(t, &tankMap)
+	if err != nil {
+		log.Println(err)
+	}
 	tankMap["coords"] = coords
 	m.Schema[coords[0]][coords[1]] = tankMap
-	m.Users[tank.Name] = User{Name: tank.Name, Coords: coords, Murders: 0, Deaths: 0}
-	m.WriteToLog(strings.Split(username, "-")[0] + " вошел в игру.")
+	m.Users[username] = User{Name: username, Coords: coords, Murders: 0}
+	m.WriteToLog(clearName + " вошел в игру.")
 	m.SendToClients(mutex)
 	return tankMap
 }
