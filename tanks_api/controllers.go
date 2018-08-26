@@ -151,3 +151,34 @@ func GetEnemies(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(enemiesData)
 }
+
+func GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	queries := mux.Vars(r)
+	username, ok := queries["username"]
+	if !ok {
+		err := map[string]string{"message": "'username' query is required!"}
+		errData, _ := json.Marshal(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errData)
+		return
+	}
+	user := make(map[string]interface{})
+	for k, v := range hashmap.Users {
+		if strings.HasPrefix(k, username) {
+			u, _ := json.Marshal(&v)
+			err := json.Unmarshal(u, &user)
+			if err != nil {
+				log.Printf("[API] message: %", err)
+			}
+		}
+	}
+	if len(user) == 0 {
+		user["is_dead"] = true
+	} else {
+		user["is_dead"] = false
+	}
+	delete(user, "name")
+	userData, _ := json.Marshal(user)
+	w.WriteHeader(http.StatusOK)
+	w.Write(userData)
+}

@@ -38,6 +38,7 @@ func main() {
 	apiRouter.HandleFunc("/map-info", GetMapInfo).Methods("GET")
 	apiRouter.HandleFunc("/get-walls", GetWallsCoords).Methods("GET")
 	apiRouter.HandleFunc("/get-enemies/{username}", GetEnemies).Methods("GET")
+	apiRouter.HandleFunc("/{username}", GetUserInfo).Methods("GET")
 	apiRouter.HandleFunc("/create-tank", UsernameRequiredDecorator(CreateTank)).Methods("POST")
 	apiRouter.HandleFunc("/delete-tank", UsernameRequiredDecorator(DeleteTank)).Methods("POST")
 	apiRouter.HandleFunc("/move-tank", UsernameRequiredDecorator(MoveTank)).Methods("POST")
