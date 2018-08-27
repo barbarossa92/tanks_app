@@ -163,12 +163,13 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := make(map[string]interface{})
-	for k, v := range hashmap.Users {
-		if strings.HasPrefix(k, username) {
-			u, _ := json.Marshal(&v)
-			err := json.Unmarshal(u, &user)
-			if err != nil {
-				log.Printf("[API] message: %", err)
+	for _, v := range hashmap.Schema {
+		for _, j := range v {
+			obj, ok := j.(map[string]interface{})
+			if ok {
+				if _, okk := obj["route"]; okk && strings.HasPrefix(obj["name"].(string), username) {
+					user = obj
+				}
 			}
 		}
 	}
