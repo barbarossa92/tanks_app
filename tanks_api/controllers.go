@@ -173,13 +173,18 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	userMap := make(map[string]interface{})
 	if len(user) == 0 {
-		user["is_dead"] = true
+		userMap["is_dead"] = true
 	} else {
-		user["is_dead"] = false
+		for key, value := range user {
+			if key != "name" {
+				userMap[key] = value
+			}
+		}
+		userMap["is_dead"] = false
 	}
-	delete(user, "name")
-	userData, _ := json.Marshal(user)
+	userData, _ := json.Marshal(userMap)
 	w.WriteHeader(http.StatusOK)
 	w.Write(userData)
 }
